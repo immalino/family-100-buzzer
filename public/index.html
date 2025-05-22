@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tombol Rebutan</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Poppins", sans-serif;
+        background-color: #f0f4f8;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <div
+      id="welcomeScreen"
+      class="flex flex-col items-center justify-center min-h-screen p-4"
+    >
+      <div class="text-center">
+        <h1 class="text-4xl font-bold text-indigo-700 mb-8">Tombol Rebutan</h1>
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
+          <h2 class="text-2xl font-semibold mb-4">Pilih Role Anda</h2>
+          <div class="grid grid-cols-1 gap-4">
+            <a
+              href="/juri.html"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg transition duration-300"
+            >
+              Juri (Host)
+            </a>
+            <a
+              href="/player.html"
+              class="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg transition duration-300"
+            >
+              Pemain
+            </a>
+            <a
+              href="/spectator.html"
+              class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-lg transition duration-300"
+            >
+              Penonton
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

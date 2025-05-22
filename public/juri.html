@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Juri - Family 100 Buzzer</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .judge-panel {
+        background-color: #ffffff;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <div class="min-h-screen bg-gray-100 p-4">
+      <div class="max-w-4xl mx-auto">
+        <div class="judge-panel p-6 mb-6">
+          <h2 class="text-2xl font-bold text-indigo-700 mb-4">Panel Juri</h2>
+          <div class="mb-4">
+            <h3 class="text-lg font-semibold">
+              Kode Permainan:
+              <span
+                id="roomCodeDisplay"
+                class="text-blue-600 font-bold text-xl"
+              >
+              </span>
+            </h3>
+          </div>
+
+          <div class="mb-6">
+            <div class="mt-2">
+              <h4 class="font-medium">Undang Pemain:</h4>
+              <div class="flex items-center">
+                <input
+                  type="text"
+                  id="playerLink"
+                  class="w-full border border-gray-300 rounded py-2 px-3 text-gray-700 bg-gray-100 mr-2"
+                  readonly
+                />
+                <button
+                  id="copyPlayerLink"
+                  class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-300"
+                >
+                  Salin
+                </button>
+              </div>
+            </div>
+            <div class="mt-2">
+              <h4 class="font-medium">Undang Penonton:</h4>
+              <div class="flex items-center">
+                <input
+                  type="text"
+                  id="spectatorLink"
+                  class="w-full border border-gray-300 rounded py-2 px-3 text-gray-700 bg-gray-100 mr-2"
+                  readonly
+                />
+                <button
+                  id="copySpectatorLink"
+                  class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-300"
+                >
+                  Salin
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gray-100 p-4 rounded-lg mb-6">
+            <h3 class="text-lg font-semibold mb-2">Status Permainan:</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p>
+                  Pemain Terhubung:
+                  <span id="playerCountDisplay" class="font-semibold">0</span>
+                </p>
+                <div id="connectedPlayersContainer" class="mt-2">
+                  <!-- Connected players will be listed here -->
+                </div>
+              </div>
+              <div>
+                <p>
+                  Jumlah Penonton:
+                  <span id="spectatorCountDisplay" class="font-semibold"
+                    >0</span
+                  >
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white border-l-4 border-green-500 p-4 rounded-lg shadow mb-6"
+          >
+            <h3 class="text-lg font-semibold mb-2">Status Tombol Rebutan:</h3>
+            <div id="noBuzzerPressedMessage" class="text-gray-600">
+              Belum ada pemain yang menekan tombol.
+            </div>
+            <div id="buzzerPressedInfo" class="hidden">
+              <p class="text-xl font-bold text-green-600 mb-1">
+                <span id="winnerNameDisplay"></span> menekan telah tombol!
+              </p>
+              <p id="buzzerTimestampDisplay" class="text-sm text-gray-500"></p>
+            </div>
+          </div>
+
+          <div class="flex gap-4 justify-center">
+            <button
+              id="createRoomBtn"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300"
+            >
+              Buat Permainan Baru
+            </button>
+            <button
+              id="resetBuzzerBtn"
+              class="bg-red-600 hidden hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300"
+            >
+              Reset Tombol Rebutan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <audio id="buzzerSound" src="/sounds/buzzer.mp3"></audio>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const buzzerSound = document.getElementById("buzzerSound");
+
+      socket.on(
+        "room-created",
+        ({ roomId, invitePlayerLink, inviteSpectatorLink }) => {
+          document.getElementById("roomCodeDisplay").innerText = roomId;
+          document.getElementById("playerLink").value = invitePlayerLink;
+          document.getElementById("spectatorLink").value = inviteSpectatorLink;
+
+          const url = new URL(window.location);
+
+          url.searchParams.set("roomId", roomId);
+
+          history.pushState({}, "", url);
+        }
+      );
+
+      socket.on("update-players", (players) => {
+        document.getElementById("playerCountDisplay").innerText =
+          players.length;
+        document.getElementById(
+          "connectedPlayersContainer"
+        ).innerText = `Pemain: ${
+          players.map((p) => p.name).join(", ") || "Belum ada pemain"
+        }`;
+      });
+
+      socket.on("update-spectators", (spectators) => {
+        document.getElementById("spectatorCountDisplay").innerText =
+          spectators.length;
+      });
+
+      socket.on("buzzer-pressed", (playerName) => {
+        buzzerSound.play();
+        document
+          .getElementById("noBuzzerPressedMessage")
+          .classList.add("hidden");
+        document.getElementById("buzzerPressedInfo").classList.remove("hidden");
+        document.getElementById("winnerNameDisplay").innerText = playerName;
+        document.getElementById("buzzerTimestampDisplay").innerText =
+          new Date().toLocaleString();
+        document.getElementById("resetBuzzerBtn").classList.remove("hidden");
+      });
+
+      socket.on("reset-buzzer", () => {
+        document
+          .getElementById("noBuzzerPressedMessage")
+          .classList.remove("hidden");
+        document.getElementById("buzzerPressedInfo").classList.add("hidden");
+        document.getElementById("winnerNameDisplay").innerText = "";
+        document.getElementById("buzzerTimestampDisplay").innerText = "";
+        document.getElementById("resetBuzzerBtn").classList.add("hidden");
+      });
+
+      document.getElementById("createRoomBtn").addEventListener("click", () => {
+        socket.emit("create-room");
+      });
+
+      document
+        .getElementById("resetBuzzerBtn")
+        .addEventListener("click", () => {
+          const roomId = new URLSearchParams(window.location.search).get(
+            "roomId"
+          );
+          console.log(roomId, "test");
+          socket.emit("reset", roomId);
+        });
+
+      const copySpectatorLink = document.getElementById("copySpectatorLink");
+      const spectatorLink = document.getElementById("spectatorLink");
+      const copyPlayerLink = document.getElementById("copyPlayerLink");
+      const playerLink = document.getElementById("playerLink");
+
+      copyPlayerLink.addEventListener("click", () => {
+        navigator.clipboard.writeText(playerLink.value);
+        copyPlayerLink.textContent = "Tersalin!";
+        setTimeout(() => {
+          copyPlayerLink.textContent = "Salin";
+        }, 2000);
+      });
+
+      copySpectatorLink.addEventListener("click", () => {
+        navigator.clipboard.writeText(spectatorLink.value);
+        copySpectatorLink.textContent = "Tersalin!";
+        setTimeout(() => {
+          copySpectatorLink.textContent = "Salin";
+        }, 2000);
+      });
+    </script>
+  </body>
+</html>

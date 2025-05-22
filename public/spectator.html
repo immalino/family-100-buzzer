@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Penonton - Family 100 Buzzer</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="h-screen">
+    <div
+      id="joinRoomScreen"
+      class="flex flex-col items-center justify-center min-h-screen p-4"
+    >
+      <div class="text-center">
+        <h1 class="text-4xl font-bold text-indigo-700 mb-6">Lihat Permainan</h1>
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
+          <div class="mb-4">
+            <label
+              for="roomId"
+              class="block text-gray-700 text-sm font-bold mb-2"
+              >Kode Permainan:</label
+            >
+            <input
+              type="text"
+              id="roomId"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Enter room code"
+            />
+          </div>
+          <div class="flex justify-center">
+            <button
+              id="joinRoom"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300"
+            >
+              Lihat Permainan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="spectatorScreen" class="hidden min-h-screen p-4">
+      <div class="max-w-4xl mx-auto">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+          <h2 class="text-2xl font-bold text-indigo-700 mb-4">
+            Panel Penonton
+          </h2>
+          <p class="text-lg text-gray-700 mb-6">
+            Kode Permainan:
+            <span id="spectatorRoomDisplay" class="font-semibold"></span>
+          </p>
+
+          <div class="bg-gray-100 p-4 rounded-lg mb-6">
+            <h3 class="text-lg font-semibold mb-2">Daftar Pemain:</h3>
+            <div id="spectatorPlayersList" class="space-y-2">
+              <!-- Player list will be added here -->
+            </div>
+            <p class="mt-2">
+              Total Pemain:
+              <span id="spectatorPlayerCount" class="font-semibold">0</span>
+            </p>
+            <p>
+              Penonton Lain:
+              <span id="otherSpectatorsCount" class="font-semibold">0</span>
+            </p>
+          </div>
+
+          <div
+            class="bg-white border-l-4 border-blue-500 p-4 rounded-lg shadow mb-6"
+          >
+            <h3 class="text-lg font-semibold mb-2">Status Permainan:</h3>
+            <div id="spectatorNoBuzzerPressedMessage" class="text-gray-600">
+              Menunggu pemain menekan tombol...
+            </div>
+            <div id="spectatorBuzzerPressedInfo" class="hidden">
+              <p class="text-xl font-bold text-green-600 mb-1">
+                <span id="spectatorWinnerNameDisplay"></span> menekan tombol
+                duluan!
+              </p>
+              <p
+                id="spectatorBuzzerTimestampDisplay"
+                class="text-sm text-gray-500"
+              ></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <audio id="buzzerSound" src="/sounds/buzzer.mp3"></audio>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const buzzerSound = document.getElementById("buzzerSound");
+
+      let buzzerLocked = false;
+
+      // Auto-fill roomId dari URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomIdFromUrl = urlParams.get("room");
+      if (roomIdFromUrl) {
+        document.getElementById("roomId").value = roomIdFromUrl;
+      }
+
+      socket.on("spectator-joined", (room) => {
+        document.getElementById("joinRoomScreen").classList.add("hidden");
+        document.getElementById("spectatorScreen").classList.remove("hidden");
+        document.getElementById("spectatorRoomDisplay").innerText =
+          roomIdFromUrl;
+        document.getElementById("spectatorPlayersList").innerText = `Pemain: ${
+          room.players.map((p) => p.name).join(", ") || "Belum ada pemain"
+        }`;
+        document.getElementById("spectatorPlayerCount").innerText =
+          room.players.length;
+      });
+
+      socket.on("update-players", (players) => {
+        document.getElementById("spectatorPlayersList").innerText = `Pemain: ${
+          players.map((p) => p.name).join(", ") || "Belum ada pemain"
+        }`;
+
+        document.getElementById("spectatorPlayerCount").innerText =
+          players.length;
+        document.getElementById("otherSpectatorsCount").innerText =
+          players.filter((p) => p.isSpectator).length;
+      });
+
+      socket.on("update-spectators", (spectators) => {
+        document.getElementById("otherSpectatorsCount").innerText = (
+          spectators.length - 1
+        ).toString();
+      });
+
+      socket.on("buzzer-pressed", (playerName) => {
+        buzzerSound.play();
+        document
+          .getElementById("spectatorNoBuzzerPressedMessage")
+          .classList.add("hidden");
+        document
+          .getElementById("spectatorBuzzerPressedInfo")
+          .classList.remove("hidden");
+        document.getElementById("spectatorWinnerNameDisplay").innerText =
+          playerName;
+        document.getElementById("spectatorBuzzerTimestampDisplay").innerText =
+          new Date().toLocaleString();
+      });
+
+      socket.on("reset-buzzer", () => {
+        document
+          .getElementById("spectatorNoBuzzerPressedMessage")
+          .classList.remove("hidden");
+        document
+          .getElementById("spectatorBuzzerPressedInfo")
+          .classList.add("hidden");
+        document.getElementById("spectatorWinnerNameDisplay").innerText = "";
+        document.getElementById("spectatorBuzzerTimestampDisplay").innerText =
+          "";
+      });
+
+      socket.on("room-deleted", () => {
+        window.location.href = "/";
+      });
+
+      socket.on("error", (message) => {
+        alert(message);
+      });
+
+      document.getElementById("joinRoom").addEventListener("click", () => {
+        const roomId = document.getElementById("roomId").value;
+        if (roomId) {
+          socket.emit("join-spectator", roomId);
+        } else {
+          alert("Masukkan kode room!");
+        }
+      });
+    </script>
+  </body>
+</html>

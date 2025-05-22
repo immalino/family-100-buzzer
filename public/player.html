@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pemain - Family 100 Buzzer</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .buzzer {
+        width: 240px;
+        height: 240px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      }
+      .buzzer:active {
+        transform: scale(0.95);
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+      }
+      .buzzer-locked {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+      .winner-animation {
+        animation: pulse 1.5s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 20px rgba(40, 167, 69, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <div
+      id="joinRoomScreen"
+      class="flex flex-col items-center justify-center min-h-screen p-4"
+    >
+      <div class="text-center">
+        <h1 class="text-4xl font-bold text-indigo-700 mb-6">
+          Bergabung ke Permainan
+        </h1>
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
+          <div class="mb-4">
+            <label
+              for="roomCodeInput"
+              class="block text-gray-700 text-sm font-bold mb-2"
+              >Kode Permainan:</label
+            >
+            <input
+              type="text"
+              id="roomCodeInput"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Enter room code"
+            />
+          </div>
+          <div id="playerNameInputContainer" class="mb-4">
+            <label
+              for="playerNameInput"
+              class="block text-gray-700 text-sm font-bold mb-2"
+              >Nama Anda:</label
+            >
+            <input
+              type="text"
+              id="playerNameInput"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Enter your name"
+            />
+          </div>
+          <div class="flex justify-center">
+            <button
+              id="joinRoomBtn"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300"
+            >
+              Bergabung ke Permainan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      id="playerScreen"
+      class="hidden min-h-screen flex flex-col items-center justify-center p-4"
+    >
+      <div class="text-center mb-8">
+        <h2 class="text-2xl font-bold text-indigo-700 mb-2">Tombol Rebutan</h2>
+        <p class="text-lg text-gray-700">
+          Kode Permainan:
+          <span id="playerRoomDisplay" class="font-semibold"></span>
+        </p>
+        <p class="text-lg text-gray-700">
+          Nama Anda: <span id="playerNameDisplay" class="font-semibold"></span>
+        </p>
+      </div>
+
+      <div id="buzzerContainer" class="flex justify-center items-center mb-8">
+        <button
+          id="buzzerButton"
+          class="buzzer bg-red-600 hover:bg-red-700 flex items-center justify-center"
+        >
+          <span class="text-white font-bold text-3xl">Tekan!</span>
+        </button>
+      </div>
+
+      <div
+        id="playerBuzzerStatus"
+        class="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto text-center"
+      >
+        <div id="playerWaitingMessage" class="text-gray-600">
+          Tunggu pertanyaannya dulu, sebelum menekan tombol!
+        </div>
+        <div id="playerBuzzerPressedInfo" class="hidden">
+          <p class="text-xl font-bold mb-2" id="playerBuzzerResult"></p>
+          <p class="text-gray-600">
+            Tunggu juri mereset tombol untuk lanjut ke pertanyaannya berikutnya!
+          </p>
+        </div>
+      </div>
+    </div>
+    <audio id="buzzerSound" src="/sounds/buzzer.mp3"></audio>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const buzzerSound = document.getElementById("buzzerSound");
+
+      let buzzerLocked = false;
+
+      // Auto-fill roomId dari URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomIdFromUrl = urlParams.get("room");
+      if (roomIdFromUrl) {
+        document.getElementById("roomCodeInput").value = roomIdFromUrl;
+      }
+
+      socket.on("joined-room", () => {
+        document.getElementById("joinRoomScreen").classList.add("hidden");
+        document.getElementById("playerScreen").classList.remove("hidden");
+      });
+
+      socket.on("buzzer-pressed", (playerName) => {
+        buzzerSound.play();
+        buzzerLocked = true;
+        document.getElementById("buzzerButton").classList.add("buzzer-locked");
+        document.getElementById("playerWaitingMessage").classList.add("hidden");
+        console.log("sadadasdsd");
+        document
+          .getElementById("playerBuzzerPressedInfo")
+          .classList.remove("hidden");
+        const isCurrentPlayer =
+          document.getElementById("playerNameDisplay").innerText === playerName;
+        document.getElementById("playerBuzzerResult").innerText = `${
+          isCurrentPlayer ? "Anda" : playerName
+        } menekan buzzer!`;
+      });
+
+      socket.on("reset-buzzer", () => {
+        buzzerLocked = false;
+        document
+          .getElementById("buzzerButton")
+          .classList.remove("winner-animation", "buzzer-locked");
+        document
+          .getElementById("playerWaitingMessage")
+          .classList.remove("hidden");
+        document
+          .getElementById("playerBuzzerPressedInfo")
+          .classList.add("hidden");
+        document.getElementById("playerBuzzerResult").innerText = "";
+      });
+
+      socket.on("room-deleted", () => {
+        window.location.href = "/";
+      });
+
+      socket.on("error", (message) => {
+        alert(message);
+      });
+
+      document.getElementById("joinRoomBtn").addEventListener("click", () => {
+        const playerName = document.getElementById("playerNameInput").value;
+        const roomId = document.getElementById("roomCodeInput").value;
+        if (playerName && roomId) {
+          socket.emit("join-room", { roomId, playerName });
+          document.getElementById("playerNameDisplay").innerText = playerName;
+          document.getElementById("playerRoomDisplay").innerText = roomId;
+        } else {
+          alert("Masukkan nama dan kode room!");
+        }
+      });
+
+      document.getElementById("buzzerButton").addEventListener("click", () => {
+        if (buzzerLocked) {
+          return;
+        }
+        document
+          .getElementById("buzzerButton")
+          .classList.add("winner-animation");
+        const roomId = document.getElementById("roomCodeInput").value;
+        const playerName = document.getElementById("playerNameInput").value;
+        socket.emit("buzz", { roomId, playerName });
+      });
+    </script>
+  </body>
+</html>
