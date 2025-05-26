@@ -12,7 +12,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use("/family-100-buzzer", express.static("public"));
+app.use(express.static("public"));
 
 // Simpan data room
 const rooms = new Map();
