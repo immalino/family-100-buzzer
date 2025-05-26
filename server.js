@@ -12,7 +12,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static("public"));
+app.use("/family-100-buzzer", express.static("public"));
 
 // Simpan data room
 const rooms = new Map();
@@ -31,8 +31,8 @@ io.on("connection", (socket) => {
     socket.join(roomId);
     socket.emit("room-created", {
       roomId,
-      invitePlayerLink: `http://localhost:3000/player.html?room=${roomId}`,
-      inviteSpectatorLink: `http://localhost:3000/spectator.html?room=${roomId}`,
+      invitePlayerLink: `/player.html?room=${roomId}`,
+      inviteSpectatorLink: `/spectator.html?room=${roomId}`,
     });
   });
 

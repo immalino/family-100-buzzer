@@ -35,6 +35,11 @@
           <div class="mb-6">
             <div class="mt-2">
               <h4 class="font-medium">Undang Pemain:</h4>
+              <input
+                type="text"
+                id="customLocalHost"
+                class="w-full border border-gray-300 rounded py-2 px-3 text-gray-700 bg-gray-100 mr-2"
+              />
               <div class="flex items-center">
                 <input
                   type="text"
@@ -130,12 +135,24 @@
       const socket = io();
       const buzzerSound = document.getElementById("buzzerSound");
 
+      const localHostInput = document.getElementById("customLocalHost");
+
       socket.on(
         "room-created",
         ({ roomId, invitePlayerLink, inviteSpectatorLink }) => {
           document.getElementById("roomCodeDisplay").innerText = roomId;
-          document.getElementById("playerLink").value = invitePlayerLink;
-          document.getElementById("spectatorLink").value = inviteSpectatorLink;
+          const playerLink =
+            (localHostInput.value || "http://localhost:3000") +
+            invitePlayerLink;
+          const spectatorLink =
+            (localHostInput.value || "http://localhost:3000") +
+            inviteSpectatorLink;
+
+          document.getElementById("playerLink").value = playerLink;
+
+          document.getElementById("spectatorLink").value = spectatorLink;
+
+          console.log(invitePlayerLink);
 
           const url = new URL(window.location);
 
