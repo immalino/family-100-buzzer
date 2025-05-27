@@ -11,6 +11,7 @@ config();
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 
 app.use(express.static("public"));
 
@@ -31,8 +32,8 @@ io.on("connection", (socket) => {
     socket.join(roomId);
     socket.emit("room-created", {
       roomId,
-      invitePlayerLink: `/player.html?room=${roomId}`,
-      inviteSpectatorLink: `/spectator.html?room=${roomId}`,
+      invitePlayerLink: `${baseUrl}/player.html?room=${roomId}`,
+      inviteSpectatorLink: `${baseUrl}/spectator.html?room=${roomId}`,
     });
   });
 
